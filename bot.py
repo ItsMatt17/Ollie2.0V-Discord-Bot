@@ -41,7 +41,7 @@ class OllieV2(commands.Bot):
 
         """
 
-        for filename in os.listdir("OllieV2.0-master\cogs"):
+        for filename in os.listdir("cogs"):
             if filename.endswith(".py"):
                 print(
                     f"[COG] Loaded bot extension", f"/{filename.replace('.', '/')}.py"
