@@ -12,6 +12,7 @@ import platform
 
 import discord
 from discord.ext import commands
+from discord import ui 
 
 import config
 
@@ -52,6 +53,25 @@ class OllieV2(commands.Bot):
 bot : commands.Bot = OllieV2(command_prefix="!", intents=discord.Intents.all())
 
 
+
+
+
+
+class VoiceSelect(ui.Select):
+    def __init__(self):
+        
+        options = []
+        for asset in os.listdir("assets"):
+            options.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
+        super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=options)
+
+class VoiceView(ui.View):
+    def __init__(self):
+        super().__init__()
+
+        self.add_item(VoiceSelect())
+
+
 @bot.tree.command(
     name="sync",
     description="Sync tree commands ",
@@ -61,7 +81,7 @@ async def sync(interaction: discord.Interaction) -> None:
 
     if interaction.user.id == 188779992585469952:  # My ID
         synced = await bot.tree.sync()
-        await interaction.response.send_message(f"Synced {len(synced)} synced commands")
+        await interaction.response.send_message(f"Synced {len(synced)} synced commands", view=VoiceView())
         print(f"Synced {len(synced)} synced commands")
 
     else:

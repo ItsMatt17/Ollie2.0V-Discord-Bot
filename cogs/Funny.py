@@ -6,38 +6,28 @@ import os
 import discord
 from discord.ext import commands
 from discord import app_commands
+from discord import ui
 
-
-
-
-class Funny(commands.Cog):
-    def __init__(self, bot):
-        self.bot : commands.Bot = bot
-        self.SOURCE = ''
-        #self.SOUND_LIST = ['']
+class VoiceSelect(ui.Select):
+    def __init__(self):
         
-
-    #TODO Change to /voice & add numerous options for the bot.
-    @app_commands.command(name="voice", description="Funny haha command")
-    async def voice(self, interaction : discord.Interaction, sound: typing.Literal["hue", "knock", "me", "rey", "rey_2", "rey_3", "hue_2", "hue_3"]):  #TODO Make dynamic by searching through assets rather than hard coding
-        if not interaction.user.voice:
-            await interaction.response.send_message('No voice channel')
-            return
-
-        if not interaction.permissions.administrator:  #Adjust perms as needed here
-            await interaction.response.send_message('No permission')
-            return
-
-        
+        options = []
         for asset in os.listdir("assets"):
-            print(f'{asset[:-4]} ||| {sound}')
+            options.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
+        
+        super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=options)
+
+    
+    async def callback(self, interaction : discord.Interaction):  
+        sound =  self.values[0]
+        for asset in os.listdir("assets"):
             if asset[:-4] == sound:
-                print(f'[SOURCE] Picked a sourece {asset}')
+                print(f'[SOURCE] Picked a source {asset}')
                 self.SOURCE = f'assets/{asset}'
                 break
 
         
-        print(f'Source: {self.SOURCE}')
+        print(f'[SOURCE]: {self.SOURCE}')
 
         channel = await interaction.user.voice.channel.connect()
         audio = discord.FFmpegPCMAudio(executable="C:\PATH_PROGRAMS/ffmpeg.exe", source=self.SOURCE) 
@@ -52,6 +42,36 @@ class Funny(commands.Cog):
 
         await channel.disconnect()
         await interaction.followup.send(content="Bye!", ephemeral=True)
+    
+
+class VoiceView(ui.View):
+    def __init__(self):
+        super().__init__(timeout=15.0)
+
+        self.add_item(VoiceSelect())
+
+  
+class Funny(commands.Cog):
+    def __init__(self, bot):
+        self.bot : commands.Bot = bot
+        self.SOURCE = ''        
+
+    @app_commands.command(name="voice", description="Funny haha command")
+    async def voice(self, interaction : discord.Interaction): 
+        if not interaction.user.voice:
+            await interaction.response.send_message('No voice channel')
+            return
+
+        if not interaction.permissions.administrator:  #Adjust perms as needed here
+            await interaction.response.send_message('No permission')
+            return
+
+        view = VoiceView()
+        msg = await interaction.response.send_message(view=view, ephemeral=True)  # Most dynamic way of coding this seems to be using views
+        print(type(msg))
+        await view.wait()
+        print(type(msg))
+
 
 
 async def setup(bot: commands.Bot):
