@@ -1,0 +1,4 @@
+.env
+cogs/__pycache__/
+assets/
+__pycache__/
