@@ -1,6 +1,7 @@
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord.ext.commands import CommandOnCooldown
 
 from config import MY_ID
 
@@ -50,6 +51,20 @@ class TalkingStick(commands.Cog):
             print(f'[TALKING STICK] Unmuted {user}')
             await user.edit(mute=False)
         await interaction.response.send_message("Untalking sticked")
+
+    @talking_stick.error
+    async def talking_stick_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, CommandOnCooldown):
+            await interaction.response.send_message(
+                f"You're on cooldown for {error.retry_after:.2f}s", ephemeral=True
+            )
+
+    @untalking_stick.error
+    async def untalking_stick_error(self, interaction: discord.Interaction, error):
+        if isinstance(error, CommandOnCooldown):
+            await interaction.response.send_message(
+                f"You're on cooldown for {error.retry_after:.2f}s", ephemeral=True
+            )
 
 
 async def setup(bot):

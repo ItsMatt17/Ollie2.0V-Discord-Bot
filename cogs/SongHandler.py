@@ -1,14 +1,13 @@
+import json
 import random
 from datetime import datetime
 
 import discord
+import pytz
 from discord.ext import commands
-import json
 
 from request.spotify import popularity_rating
 
-CHLOE_ID = 396098786520334338
-MY_ID = 188779992585469952
 responses = [
     "Please stfu kindly",
     "You're going to make me have a joker moment",
@@ -60,17 +59,24 @@ class SongHandler(commands.Cog):
         return data["basic_songs"]
 
     @staticmethod
-    def _get_update_offenses() -> int:
+    def _get_update_offenses(user_id: int) -> int:
         """
         Returns number of genaric song offenses & adds 1 to the JSON file.
 
         :return: Numbe of genaric songs
         :rtype: `int`
         """
-
         with open("storage/song_counter.json", "r+") as file:
             data = json.load(file)
             data["basic_songs"] += 1
+            if str(user_id) not in data["User"]:
+                data["User"][f"{user_id}"] = 1  # Track user song popularity
+                print("[Not Found] Adding user to JSON file")
+
+            else:
+
+                data["User"][f"{user_id}"] += 1
+                print("[Found User] Found user add one to their counter")
 
             file.seek(0)
             json.dump(data, file)
@@ -91,30 +97,18 @@ class SongHandler(commands.Cog):
 
     @commands.Cog.listener()
     async def on_presence_update(self, before: discord.Member, after: discord.Member):
-        # TODO make it so the bot doesn't log stop and starts of songs
-        # TODO Make a a way to save data on who makes the bot activiate the most amount of times
         """Checks if a user is listening to a song, and if it is a basic song, it will send a message to the channel."""
+        # TODO if user has custom status, breaks
 
-        if not after.activities or not isinstance(after.activity,
-                                                  discord.activity.Spotify):  # Confirm they didn't remove their activity
-            print(
-                f"Activity Spotify Not Found: | Type: | User: {after.name} | after_activity: {type(after.activity)} | Returned")
-
+        if not after.activities:
             return
 
-        song_activity = None
-        for activity in after.activities:  # Sort through list of numerous activities i.e game, streaming, listening
-            print(activity, type(activity))
+        song_activity = discord.utils.get(after.activities, type=discord.ActivityType.listening)
 
-            if isinstance(activity, discord.activity.Spotify):
-                print(
-                    f"Activity Chosen: {activity} | Type:{type(activity)} | User: {after.name} | after_activity: {type(after.activity)}")
-                song_activity = activity
-                break
-
-        if not song_activity:  # If there's not a song in their activity, return | Might not need?
-            print("[No Song Activity] No song activity found")
+        if not song_activity:
+            print(f"[Activity] Spotify not found in status {after.activities}")
             return
+        print(type(song_activity))
 
         message_history = self.bot.get_channel(1071272760099209237).history(limit=5)
         async for message in message_history:  # Intended to prevent duplicate/spam messages. Checks what last message was, if it was the same as current, song then return.
@@ -123,13 +117,17 @@ class SongHandler(commands.Cog):
             for embed in embeds:
                 embed_dict: dict = embed.to_dict()
                 # print(embed_dict)
-                user_id: str = embed_dict["fields"][0]["value"].strip("<@>")
-                song_name: str = embed_dict["fields"][1]["value"].replace("*", "")
-                index: int = song_name.index("by")
-                song_name = song_name[:index - 1]
+                try:
+                    user_id: str = embed_dict["fields"][0]["value"].strip("<@>")
+                    song_name: str = embed_dict["fields"][1]["value"].replace("*", "")
+                    index: int = song_name.index("by")
+                    song_name = song_name[:index - 1]
+                except IndexError as e:
+                    continue
+
                 print(
-                    f"user_id: {int(user_id)} | after_id: {after.id} | after_activity: {after.activity.title} | song_name: {song_name}")
-                if int(user_id) == after.id and after.activity.title == song_name:
+                    f"[EMBED LOOP] user_id: {int(user_id)} | after_id: {after.id} | after_activity: {song_activity.title} | song_name: {song_name} ||| {int(user_id) == after.id} {song_activity.title == song_name}")
+                if int(user_id) == after.id and song_activity.title == song_name:
                     print("[Duplicate] Song found duplicated")
                     return
 
@@ -140,15 +138,18 @@ class SongHandler(commands.Cog):
         album_photo = song_activity.album_cover_url
         embed_title = "Music Tracker"
         offenses = None
+        # Time handling
         now = datetime.now()
-        ftime = now.strftime("%H:%M")
+        timez = pytz.timezone('US/Eastern')
+        now = now.astimezone(timez)
+        ftime = now.strftime("%I:%m %p")
 
         if not popularity:
             await self.bot.get_channel(1071272760099209237).send(embed=self.error_embed())
             return
 
         if int(popularity) >= 75:
-            offenses = self._get_update_offenses()
+            offenses = self._get_update_offenses(after.id)  # User's ID
 
             embed_title = "Basic Music Tracker"
 
@@ -168,7 +169,7 @@ class SongHandler(commands.Cog):
                 user=after.id, title=embed_title)
             .add_field(name="Song", value=f"{song_name} by **{artist}**", inline=False)
             .set_thumbnail(url=f"{album_photo}")
-            .set_footer(text=f"{after.name} | Global Occurrence Number: {offenses} | {ftime}",
+            .set_footer(text=f"{after.name} | Basic Song Counter: {offenses} | {ftime} EST",
                         icon_url=after.avatar.url)
             .add_field(name="Popularity", value=f"{popularity}")
         )
