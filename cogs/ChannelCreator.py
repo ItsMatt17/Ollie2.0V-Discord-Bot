@@ -6,6 +6,7 @@ from discord.ext import commands
 
 from config import TESTING_CHANNEL
 
+#BUG Can create two channels at a time
 
 EMOJIS = ["😊", "😂", "😁", "😍", "😘", "😒", "😜", "👏", "💋", "😃", "🤢", "🤔", "😆"]
 logging.basicConfig(level=0)
@@ -13,7 +14,7 @@ logging.basicConfig(level=0)
 class VCChannelCreator(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot: commands.Bot = bot
-        self.channel_obj: discord.VoiceChannel = []
+        self.channel_obj: list[discord.VoiceChannel] = []
         self.channel_creator = None
 
     async def empty_checker(self, guild: discord.Guild) -> None:
@@ -23,7 +24,6 @@ class VCChannelCreator(commands.Cog):
 
         for channel in self.channel_obj:
             # Iterates through channels created by bot/auto create
-
 
             if len(channel.members) == 0:
                 print(f"[DELETED] Channel named: {channel.name} was deleted")
@@ -58,19 +58,19 @@ class VCChannelCreator(commands.Cog):
             return
         if self.bot.is_ws_ratelimited():
             await self.bot.get_channel(1012526325401145374).send(
-                content=f"Bot is currently ratelimited"
+                content=f"Bot is currently rate-limited"
             )  # Makes sure it's not ratelimited
             return
 
         channel_name: str = member.display_name  # Get user's name/nick for channel name
-        catagory = after.channel.category  # Get's catagory channel creator is in
-        overwrites = {member: discord.PermissionOverwrite(priority_speaker=True)}
+        category = after.channel.category  # Gets category channel creator is in
+        overwrites = {member: discord.PermissionOverwrite(priority_speaker=True, view_channel=True, connect=True)}
         position = len(guild.voice_channels)
         channel_emoji = random.choice(EMOJIS)
         channel_name = f"{channel_name}'s Channel {channel_emoji}"
 
         created_channel: discord.VoiceChannel = await guild.create_voice_channel(
-            name=channel_name, position=position, category=catagory, overwrites=overwrites
+            name=channel_name, position=position, category=category, overwrites=overwrites
         )  # Creates channel
 
 

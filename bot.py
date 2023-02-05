@@ -1,18 +1,15 @@
 """"     -----------------------
-        +                       +
-        +                       +
+        +     @ItsMatt17        +
+        +   Ollie-Discord-Bot   +
         +                       +
          -----------------------
 
 """
-
-
 import os
 import platform
 
 import discord
 from discord.ext import commands
-from discord import ui 
 
 import config
 
@@ -24,7 +21,7 @@ class OllieV2(commands.Bot):
     async def on_ready(self) -> None:
         """
         Start up messages for when clients is ready
-        :return: `None`
+        :return `None`
 
         """
         print("-------------------")
@@ -50,26 +47,7 @@ class OllieV2(commands.Bot):
                 await bot.load_extension(f"cogs.{filename[:-3]}")
 
 
-bot : commands.Bot = OllieV2(command_prefix="!", intents=discord.Intents.all())
-
-
-
-
-
-
-class VoiceSelect(ui.Select):
-    def __init__(self):
-        
-        options = []
-        for asset in os.listdir("assets"):
-            options.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
-        super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=options)
-
-class VoiceView(ui.View):
-    def __init__(self):
-        super().__init__()
-
-        self.add_item(VoiceSelect())
+bot: commands.Bot = OllieV2(command_prefix="!", intents=discord.Intents.all())
 
 
 @bot.tree.command(
@@ -78,10 +56,18 @@ class VoiceView(ui.View):
     guild=discord.Object(id=982514587742142545),
 )
 async def sync(interaction: discord.Interaction) -> None:
+    """
+    The sync function is used to sync the commands from the bot's tree to a database.
+    It will return a list of all synced commands.
+
+    :param interaction:discord.Interaction: Get information about the interaction, such as the message
+    :return: None
+    :doc-author: Trelent
+    """
 
     if interaction.user.id == 188779992585469952:  # My ID
         synced = await bot.tree.sync()
-        await interaction.response.send_message(f"Synced {len(synced)} synced commands", view=VoiceView())
+        await interaction.response.send_message(f"Synced {len(synced)} synced commands")
         print(f"Synced {len(synced)} synced commands")
 
     else:

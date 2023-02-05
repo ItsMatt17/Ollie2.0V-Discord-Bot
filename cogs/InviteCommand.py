@@ -53,7 +53,6 @@ class InviteCommand(commands.Cog):
     @invite.error
     async def invite_error(self, interaction: discord.Interaction, error) -> None:
         logging.critical(error.__cause__, type(error))
-        print("||||||||||||||||", error.__cause__, type(error))
         if isinstance(error.__cause__, Forbidden):
             logging.error("Not allowed to message that user!")
             await interaction.response.send_message(
@@ -62,7 +61,7 @@ class InviteCommand(commands.Cog):
 
         elif isinstance(error, CommandOnCooldown):
             await interaction.response.send_message(
-                f"You're on scooldown for {error.retry_after:.2f}s", ephemeral=True
+                f"You're on cooldown for {error.retry_after:.2f}s", ephemeral=True
             )
     
         elif isinstance(error, discord.app_commands.errors.CommandInvokeError):
