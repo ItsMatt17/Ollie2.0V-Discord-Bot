@@ -6,6 +6,9 @@ import aiohttp
 from config import SPOTIFY_API, SPOTIFY_CLIENT_ID
 
 
+class SpotifyError(Exception):
+    pass
+
 async def get_token():
     """Gets token from Spotify API & returns it
     :parameter: `None`
@@ -24,7 +27,7 @@ async def get_token():
         # print("getting token")
         result = await session.post(url, data=data, ssl=False)
         if result.status != 200:
-            print(f"[API ERROR] {result.status}")
+            raise SpotifyError(f"Error getting Spotify token, status code: {result.status}.")
 
         json_info = await result.json()
 
@@ -32,7 +35,7 @@ async def get_token():
     return token
 
 
-def get_auth_header(token):
+def get_auth_header(token) -> dict:
     """Makes a header for the Spotify API
 
     :param: `str` of token
@@ -40,7 +43,7 @@ def get_auth_header(token):
     return {"Authorization": "Bearer " + token}
 
 
-async def get_popularity(token, spotify_id):
+async def get_popularity(token, spotify_id) -> int:
     """Gets popularity of a song from Spotify API
 
     :param: `str` of token, `str` of spotify_id
@@ -63,8 +66,9 @@ async def popularity_rating(spotify_id) -> Union[int, None]:
     """
     try:
         token = await get_token()
-        pop = await get_popularity(token, spotify_id)
-        return pop
+        popularity = await get_popularity(token, spotify_id)
+        return popularity
+
     except Exception as e:
         print(e)
         return None

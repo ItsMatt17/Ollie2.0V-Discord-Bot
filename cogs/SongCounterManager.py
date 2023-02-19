@@ -2,15 +2,16 @@ import json
 from operator import itemgetter
 
 import discord
-import pytz
 from discord import app_commands
 from discord.app_commands import CommandOnCooldown
 from discord.ext import commands
 
+from config import MusicTracker, current_time
+
 
 class SongCounterManager(commands.Cog):
-    def __init__(self, bot):
-        self.bot = bot
+    def __init__(self, bot: commands.Bot):
+        self.bot: commands.Bot = bot
 
     @staticmethod
     def _leaderboard_embed() -> discord.Embed:
@@ -23,20 +24,21 @@ class SongCounterManager(commands.Cog):
     @app_commands.checks.cooldown(3, 10)
     @app_commands.command(name="leaderboard", description="Gets song popularity leaderboard")
     async def leaderboard(self, interaction: discord.Interaction) -> None:
-        with open("storage/song_counter.json", "r") as file:
+        with open(MusicTracker.SONG_COUNTER_PATH, "r") as file:
             data = json.load(file)
-            res = dict(sorted(data["User"].items(), key=itemgetter(1), reverse=True)[:3])
+            res = dict(sorted(data["User"].items(), key=itemgetter(1), reverse=True)[:3])  # Fetch top 3 users
             top_ids = []
-            top_count = []
+            top_count = []  # Most def a better way of doing this idk how yet
+
             for key, value in res.items():
                 top_ids.append(key)
                 top_count.append(value)
+
             top_user: discord.Member = await interaction.guild.fetch_member(int(top_ids[0]))
             avatar = top_user.avatar.url
-            time = interaction.created_at
-            timez = pytz.timezone('US/Eastern')
-            time = time.astimezone(tz=timez)
-            time = time.strftime("%I:%m %p")
+
+            # Time
+            time = current_time()
 
         await interaction.response.send_message(embed=self._leaderboard_embed()
                                                 .add_field(name='Top users',

@@ -1,83 +1,62 @@
 import random
-import logging
 
 import discord
 from discord.ext import commands
 
-from config import TESTING_CHANNEL
-
-#BUG Can create two channels at a time
-
-EMOJIS = ["😊", "😂", "😁", "😍", "😘", "😒", "😜", "👏", "💋", "😃", "🤢", "🤔", "😆"]
-logging.basicConfig(level=0)
+EMOJIS = ["😊", "😂", "😁", "😍", "😘", "😒", "😜", "👏", "💋", "😃", "🤔", "😆"]
 
 class VCChannelCreator(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot: commands.Bot = bot
         self.channel_obj: list[discord.VoiceChannel] = []
-        self.channel_creator = None
 
     async def empty_checker(self, guild: discord.Guild) -> None:
         channel: discord.VoiceChannel
-        if len(self.channel_obj) <= 0:  # If channel doesn't have nothing in it
+        if len(self.channel_obj) <= 0:  # If there are no custom channels
             return
 
-        for channel in self.channel_obj:
-            # Iterates through channels created by bot/auto create
-
+        for channel in self.channel_obj:  # Iterates through a list of custom channels
             if len(channel.members) == 0:
-                print(f"[DELETED] Channel named: {channel.name} was deleted")
                 self.channel_obj.remove(channel)
-                await guild.get_channel(channel.id).delete()
-                await self.bot.get_channel(TESTING_CHANNEL).send(
-                    content="Channel deleted, thank god!"
-                )
+                await channel.delete()
 
     @commands.Cog.listener()
     async def on_voice_state_update(
-        self,
-        member: discord.Member,
-        before: discord.VoiceState,
-        after: discord.VoiceState,
+            self,
+            member: discord.Member,
+            before: discord.VoiceState,
+            after: discord.VoiceState,
     ):
         guild: discord.Guild = member.guild
-        
+
         await self.empty_checker(guild)
 
-        if not after.channel:  # Check if both are not equal to None | Why does this work now........
-
+        if not after.channel:  # Why does this work now........
             return
-
-        # await self.empty_checker(guild)  # Not sure why this throws an error if this above this statement... 
-
 
         if (
-            after.channel.name != "[+] Create Channel"
-        ):  # Check if user join is in a certain channel TODO:(Will make dynamic)
-
-            return
-        if self.bot.is_ws_ratelimited():
-            await self.bot.get_channel(1012526325401145374).send(
-                content=f"Bot is currently rate-limited"
-            )  # Makes sure it's not ratelimited
+                after.channel.name != "[+] Create Channel"
+        ):  # Check if user does not join channel creator
             return
 
         channel_name: str = member.display_name  # Get user's name/nick for channel name
-        category = after.channel.category  # Gets category channel creator is in
-        overwrites = {member: discord.PermissionOverwrite(priority_speaker=True, view_channel=True, connect=True)}
-        position = len(guild.voice_channels)
+        category: discord.CategoryChannel = after.channel.category  # Gets category channel creator is in
+        overwrites: dict[discord.Member, discord.PermissionOverwrite] = {
+            member: discord.PermissionOverwrite(priority_speaker=True, view_channel=True, connect=True),
+            guild.default_role: discord.PermissionOverwrite(stream=True, send_messages=True)}
+        position: int = len(guild.voice_channels)
         channel_emoji = random.choice(EMOJIS)
-        channel_name = f"{channel_name}'s Channel {channel_emoji}"
+
+        channel_name: str = f"{channel_name}'s Channel {channel_emoji}"
 
         created_channel: discord.VoiceChannel = await guild.create_voice_channel(
             name=channel_name, position=position, category=category, overwrites=overwrites
         )  # Creates channel
 
-
         await member.move_to(
             channel=created_channel, reason="Auto Bot Move"
         )  # Moves user
-        await self.bot.get_channel(1037278984410517504).send("Successful Interaction")
+
         self.channel_obj.append(
             created_channel
         )  # Adds to list to keep track of channel objects

@@ -1,37 +1,38 @@
-
 import asyncio
-import typing
 import os
 
 import discord
-from discord.ext import commands
 from discord import app_commands
 from discord import ui
+from discord.ext import commands
+
+from config import VoiceFunny
+
 
 class VoiceSelect(ui.Select):
     def __init__(self):
         self.SOURCE = None
         options = []
 
-        for asset in os.listdir("assets"):
+        for asset in os.listdir(VoiceFunny.assets):
             options.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
-        if len(options) > 25:
+        if len(options) >= 25:
             print(f"[WARNING] Assets are reaching limit, there are {len(options)} in ./assets")
         super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=options)
 
 
     async def callback(self, interaction : discord.Interaction):
         sound = self.values[0]
-        for asset in os.listdir("assets"):
+        for asset in os.listdir(VoiceFunny.assets):
             if asset[:-4] == sound:
                 print(f'[SOURCE] Picked a source {asset}')
-                self.SOURCE = f'assets/{asset}'
+                self.SOURCE = f'{VoiceFunny.assets}/{asset}'
                 break
 
         print(f'[SOURCE]: {self.SOURCE}')
 
         channel = await interaction.user.voice.channel.connect()
-        audio = discord.FFmpegPCMAudio(executable="C:/PATH_PROGRAMS/ffmpeg.exe", source=self.SOURCE)
+        audio = discord.FFmpegPCMAudio(executable=VoiceFunny.executable, source=self.SOURCE)
         channel.play(audio)
 
         await interaction.response.send_message(content=":)", ephemeral=True)
@@ -65,21 +66,15 @@ class Funny(commands.Cog):
             await interaction.response.send_message('No voice channel')
             return
 
-        #if self.bot_check()
-        # if not interaction.permissions.administrator:  #Adjust perms as needed here
-        #     await interaction.response.send_message('No permission')
-        #     return
 
-        #BUG Potential issue with /voice
         #TODO Fix for check if bot is already connected to channel
+
         if self.bot.voice_clients:
             await interaction.response.send_message("Already in a channel")
             print("In a channel")
 
         view = VoiceView()
         await interaction.response.send_message(view=view, ephemeral=True)
-        #interacted = await view.interaction_check(view)
-        #print(f"[INTERACTED] - {interacted}")
         await view.wait()
 
 
@@ -89,8 +84,12 @@ class Funny(commands.Cog):
 
         if isinstance(error, discord.app_commands.CommandOnCooldown):
             await interaction.response.send_message(
-            f"You're on scooldown for {error.retry_after:.2f}s", ephemeral=True
-        )
+                f"You're on scooldown for {error.retry_after:.2f}s", ephemeral=True
+            )
+        elif isinstance(error, discord.ClientException):
+            message = interaction.message
+            if message:
+                message.delete()
 
 async def setup(bot: commands.Bot):
    await bot.add_cog(Funny(bot))

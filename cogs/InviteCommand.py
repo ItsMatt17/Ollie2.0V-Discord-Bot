@@ -1,11 +1,13 @@
 import logging
 
 import discord
+from discord import Forbidden
 from discord import app_commands
-from discord.ext import commands
-from discord import NotFound, Forbidden
 from discord.app_commands import CommandOnCooldown
+from discord.ext import commands
+
 from Utils.embeds import no_vc, successful_invite
+from config import current_time
 
 
 class InviteCommand(commands.Cog):
@@ -20,23 +22,21 @@ class InviteCommand(commands.Cog):
         user_voice_state = interaction.user.voice
 
         if not user_voice_state:
-            print("no user voice state")
             await interaction.response.send_message(embed=no_vc())
+            return
 
-        elif user:
-            user_channel = user_voice_state.channel.id
-            time = interaction.created_at
-            time = str(time.time())[0:5]
-            # print("should be good")
+        if user:
+            user_channel_obj = user_voice_state.channel
+            user_channel_id = user_voice_state.channel.id
+            time = current_time()
 
             users_dm = await self.bot.create_dm(user)
             if isinstance(users_dm, discord.DMChannel):
-                invite_obj = await self.bot.get_channel(user_channel).create_invite(
+                invite_obj = await self.bot.get_channel(user_channel_id).create_invite(
                     reason="Auto Creation"
                 )
 
                 invite = invite_obj.url
-                print(invite, invite_obj)
                 await users_dm.send(
                     embed=successful_invite(
                         channel_link=invite, user=interaction.user
@@ -44,11 +44,10 @@ class InviteCommand(commands.Cog):
                         icon_url=interaction.guild.icon.url,
                         text=f"{user.name} invited you a to [{user_voice_state.channel.name}] at {time}",
                     )
-                )                
+                )
+                if not user_channel_obj.overwrites_for(interaction.guild.default_role).view_channel:
+                    await user_channel_obj.set_permissions(target=user, connect=True, view_channel=True)
                 await interaction.response.send_message("Invite Sent!", ephemeral=True)
-
-        else:
-            print("hi")
 
     @invite.error
     async def invite_error(self, interaction: discord.Interaction, error) -> None:

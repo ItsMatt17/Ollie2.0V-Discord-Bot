@@ -13,7 +13,6 @@ class TalkingStick(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.command(name="talking_stick", description="Make a channel a talking stick")
     async def talking_stick(self, interaction: discord.Interaction):
-        print(interaction.id)
         if not interaction.user.voice:
             await interaction.response.send_message("You're not in a voice channel!")
             return
@@ -23,12 +22,13 @@ class TalkingStick(commands.Cog):
             return
 
         channel = interaction.user.voice
-        for user in channel.channel.members:
+        for user in channel.channel.members:  # All users in voice channel
             if user.id == interaction.user.id:
                 continue
             print(f'[TALKING STICK] Muted {user}')
 
-            await user.edit(mute=True)
+            await user.edit(
+                mute=True)  # I think server mutes for every channel. Could be problem when someone leaves without me unmuting them.
 
         await interaction.response.send_message(
             "https://media.discordapp.net/attachments/602603671875747844/799212528600612904/image0.png")

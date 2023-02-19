@@ -1,6 +1,6 @@
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
 
 class LockHideVC(commands.Cog):
@@ -11,15 +11,19 @@ class LockHideVC(commands.Cog):
 
     @app_commands.command(name="lh", description="Lock and hide channels that you own")
     async def lh(self, interaction : discord.Interaction):
-        voice_channel : discord.VoiceState = interaction.user.voice
-        if not voice_channel:  # Check if user is in a voice channel on command send
+        voice_channel: discord.VoiceState = interaction.user.voice
+
+        if not voice_channel:
+            # Check if user is in voice channel or not
             await interaction.response.send_message("You're not in a voice channel...")
             return
 
-        owns_channel: bool = voice_channel.channel.overwrites_for(interaction.user).priority_speaker  # Way to check if user owns channel (giving specific perm on channel creation)
+        owns_channel: bool = voice_channel.channel.overwrites_for(
+            interaction.user).priority_speaker  # Way to check if user owns channel (giving specific perm on channel creation)
 
         if not owns_channel:  # Checks is user owns channel
-            await interaction.response.send_message("You don't own this channel... Try in a channel you created yourself!")
+            await interaction.response.send_message(
+                "You don't own this channel... Try in a channel you created yourself!")
             return
 
         locked = voice_channel.channel.permissions_for(interaction.guild.default_role)

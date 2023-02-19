@@ -1,42 +1,17 @@
 import json
-import random
-from datetime import datetime
 
 import discord
-import pytz
+from discord import app_commands
 from discord.ext import commands
 
+from config import MY_ID, MusicTracker, current_time
 from request.spotify import popularity_rating
-
-responses = [
-    "Please stfu kindly",
-    "You're going to make me have a joker moment",
-    "Making me end it soon",
-    "This is why Hue is better",
-    "Just shut up, I beg",
-    "Here comes the art major",
-]
-
-POPULARITY_PHOTOS = {
-
-}
 
 
 class SongHandler(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.channel_id = 1012526325401145374
-
-    @commands.Cog.listener()
-    async def on_raw_reaction_add(self, interaction: discord.RawReactionActionEvent):
-
-        reaction = interaction.emoji
-        if interaction.user_id == CHLOE_ID and reaction.name == "🤓":
-            self.channel_id = interaction.channel_id
-            random_response = random.choice(responses)
-
-            await self.bot.get_channel(self.channel_id).send(
-                content=f"{random_response} <@{CHLOE_ID}> ")
+        self.disabled = False
 
     @staticmethod
     def error_embed() -> discord.Embed:
@@ -52,8 +27,7 @@ class SongHandler(commands.Cog):
 
         :return: `int` of number of times a generaic song has been captured
         """
-
-        with open("storage/song_counter.json", "r+") as file:
+        with open(MusicTracker.SONG_COUNTER_PATH, "r+") as file:
             data = json.load(file)
 
         return data["basic_songs"]
@@ -66,15 +40,14 @@ class SongHandler(commands.Cog):
         :return: Numbe of genaric songs
         :rtype: `int`
         """
-        with open("storage/song_counter.json", "r+") as file:
+        with open(MusicTracker.SONG_COUNTER_PATH, "r+") as file:
             data = json.load(file)
+
             data["basic_songs"] += 1
             if str(user_id) not in data["User"]:
                 data["User"][f"{user_id}"] = 1  # Track user song popularity
                 print("[Not Found] Adding user to JSON file")
-
             else:
-
                 data["User"][f"{user_id}"] += 1
                 print("[Found User] Found user add one to their counter")
 
@@ -95,28 +68,38 @@ class SongHandler(commands.Cog):
         )
         return photo_embed
 
+    @app_commands.command(name="pause", description="pause counter for songs")
+    @commands.is_owner()
+    async def pause(self, interaction: discord.Interaction):
+        if not self.disabled:
+            self.disabled = True
+            print("Song tracking disabled")
+            await interaction.response.send_message("Sound tracking disabled")
+            return
+
+        self.disabled = False
+        print("Song tracking enabled")
+        await interaction.response.send_message("Sound tracking enabled")
+
     @commands.Cog.listener()
     async def on_presence_update(self, before: discord.Member, after: discord.Member):
         """Checks if a user is listening to a song, and if it is a basic song, it will send a message to the channel."""
-        # TODO if user has custom status, breaks
 
-        if not after.activities:
+        if not after.activities or self.disabled:
             return
 
         song_activity = discord.utils.get(after.activities, type=discord.ActivityType.listening)
 
         if not song_activity:
-            print(f"[Activity] Spotify not found in status {after.activities}")
             return
-        print(type(song_activity))
 
-        message_history = self.bot.get_channel(1071272760099209237).history(limit=5)
+        message_history = self.bot.get_channel(MusicTracker.MUSIC_CHANNEL).history(limit=5)
         async for message in message_history:  # Intended to prevent duplicate/spam messages. Checks what last message was, if it was the same as current, song then return.
             embeds: list[discord.Embed] = message.embeds
             embed: discord.Embed
             for embed in embeds:
                 embed_dict: dict = embed.to_dict()
-                # print(embed_dict)
+
                 try:
                     user_id: str = embed_dict["fields"][0]["value"].strip("<@>")
                     song_name: str = embed_dict["fields"][1]["value"].replace("*", "")
@@ -125,38 +108,34 @@ class SongHandler(commands.Cog):
                 except IndexError as e:
                     continue
 
-                print(
-                    f"[EMBED LOOP] user_id: {int(user_id)} | after_id: {after.id} | after_activity: {song_activity.title} | song_name: {song_name} ||| {int(user_id) == after.id} {song_activity.title == song_name}")
+                # print(
+                #    f"[EMBED LOOP] user_id: {int(user_id)} | after_id: {after.id} | after_activity: {song_activity.title} | song_name: {song_name} ||| {int(user_id) == after.id} {song_activity.title == song_name}")
                 if int(user_id) == after.id and song_activity.title == song_name:
-                    print("[Duplicate] Song found duplicated")
                     return
 
-        song_id = song_activity.track_id
+        song_id: int = song_activity.track_id
         popularity = await popularity_rating(song_id)
-        print(type(song_activity))
         song_name = song_activity.title
         album_photo = song_activity.album_cover_url
         embed_title = "Music Tracker"
         offenses = None
-        # Time handling
-        now = datetime.now()
-        timez = pytz.timezone('US/Eastern')
-        now = now.astimezone(timez)
-        ftime = now.strftime("%I:%m %p")
 
-        if not popularity:
-            await self.bot.get_channel(1071272760099209237).send(embed=self.error_embed())
+        if popularity is None:
+            me = await self.bot.fetch_user(MY_ID)
+            me.send("Popularity issue...")
             return
 
         if int(popularity) >= 75:
             offenses = self._get_update_offenses(after.id)  # User's ID
-
             embed_title = "Basic Music Tracker"
 
         else:
             offenses = self._get_offenses()
 
+        time: str = current_time()
+
         artist_len = len(song_activity.artists)
+        # Dealing with suffixes to make it somewhat nice. There's probably a better way to do this.
         if artist_len >= 3:
             artist = ", ".join(song_activity.artists)
         elif artist_len == 2:
@@ -164,12 +143,12 @@ class SongHandler(commands.Cog):
         else:
             artist = "".join(song_activity.artists)
 
-        await self.bot.get_channel(1071272760099209237).send(
+        await self.bot.get_channel(MusicTracker.MUSIC_CHANNEL).send(
             embed=self._song_tracker_embed(
                 user=after.id, title=embed_title)
             .add_field(name="Song", value=f"{song_name} by **{artist}**", inline=False)
             .set_thumbnail(url=f"{album_photo}")
-            .set_footer(text=f"{after.name} | Basic Song Counter: {offenses} | {ftime} EST",
+            .set_footer(text=f"{after.name} | Basic Song Counter: {offenses} | {time} EST",
                         icon_url=after.avatar.url)
             .add_field(name="Popularity", value=f"{popularity}")
         )

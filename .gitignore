@@ -2,3 +2,5 @@
 cogs/__pycache__/
 assets/
 __pycache__/
+/ffmpeg.exe
+/cogs/DailyMessager.py
