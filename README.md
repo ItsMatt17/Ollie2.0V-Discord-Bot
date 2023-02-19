@@ -7,4 +7,4 @@ Discord bot which adds customizeability
 - Custom voice channels for users
 - Commands allowing control over those channels
 - Ability to /invite users to voice channels
-- /voice plays custom sounds I personlly added (ffmpeg required in bot)
+- /voice plays custom sounds I personally added (ffmpeg required in bot)
