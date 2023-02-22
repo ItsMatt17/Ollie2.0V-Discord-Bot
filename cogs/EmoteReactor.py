@@ -17,6 +17,9 @@ responses = [
 ]
 
 EMOJIS = ["😡", "🍓", "🍇", "🍉", "🥺", "🤐", '😎']
+SHADY_EMOJI = ["💯", "🔥"]
+SHADYS = 212353187523330048
+USERS: typing.List[int] = [CHLOE_ID, SANDRA_ID, SHADYS]
 
 
 class EmoteReactor(commands.Cog):
@@ -25,18 +28,30 @@ class EmoteReactor(commands.Cog):
         self.channel_id = None
         self.chloe_reactor = True
         self.sandra_reactor = True
+        self.shady_reactor = True
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.id == self.bot.user.id:
             return
+
+        if not message.author.id in USERS:
+            return
+
+        if message.author.id == SHADYS and self.shady_reactor is True:
+            emoji = random.choice(SHADY_EMOJI)
+            await message.add_reaction(emoji)
+            return
+
         if message.author.id == SANDRA_ID and self.sandra_reactor is True:
             emoji = random.choice(EMOJIS)
             await message.add_reaction(emoji)
+            return
 
         if message.author.id == CHLOE_ID and self.chloe_reactor is True:
             emoji = "🤓"
             await message.add_reaction(emoji)
+            return
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, interaction: discord.RawReactionActionEvent):

@@ -12,10 +12,10 @@ from config import VoiceFunny
 class VoiceSelect(ui.Select):
     def __init__(self):
         self.SOURCE = None
-        options = []
+        options_1 = []
 
-        for asset in os.listdir(VoiceFunny.assets):
-            options.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
+        for asset in enumerate(os.listdir(VoiceFunny.assets)):
+            options_1.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
         if len(options) >= 25:
             print(f"[WARNING] Assets are reaching limit, there are {len(options)} in ./assets")
         super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=options)
@@ -49,32 +49,38 @@ class VoiceSelect(ui.Select):
 class VoiceView(ui.View):
     def __init__(self):
         super().__init__(timeout=15.0)
-
         self.add_item(VoiceSelect())
 
 
 class Funny(commands.Cog):
     def __init__(self, bot):
-        self.bot : commands.Bot = bot
+        self.bot: commands.Bot = bot
         self.SOURCE = ''
 
+    @staticmethod
+    def _embed_builder() -> discord.Embed:
+        # for asset in os.listdir(VoiceFunny.assets):
+
+        embed = discord.Embed(title="Funny Voice Clips",
+                              description=f"With over {len(VoiceSelect.options_1)} different clips, and Rey's flirting clips!",
+                              color=discord.Color.red())
+        return embed
 
     @app_commands.checks.cooldown(3, 10)
     @app_commands.command(name="voice", description="Funny haha command")
-    async def voice(self, interaction : discord.Interaction):
+    async def voice(self, interaction: discord.Interaction):
         if not interaction.user.voice:
             await interaction.response.send_message('No voice channel')
             return
 
-
-        #TODO Fix for check if bot is already connected to channel
+        # TODO Fix for check if bot is already connected to channel
 
         if self.bot.voice_clients:
             await interaction.response.send_message("Already in a channel")
             print("In a channel")
 
         view = VoiceView()
-        await interaction.response.send_message(view=view, ephemeral=True)
+        await interaction.response.send_message(embed=self._embed_builder(), view=view, ephemeral=True)
         await view.wait()
 
 
@@ -89,7 +95,7 @@ class Funny(commands.Cog):
         elif isinstance(error, discord.ClientException):
             message = interaction.message
             if message:
-                message.delete()
+                await message.delete()
 
 async def setup(bot: commands.Bot):
    await bot.add_cog(Funny(bot))

@@ -17,6 +17,10 @@ CHLOE_ID: typing.Final[int] = 396098786520334338
 SANDRA_ID: typing.Final[int] = 620357491355549715
 
 
+class GuildInfo:
+    DEFAULT_ROLE: int = 982531286616899634  # The Unwanted Role
+
+
 class VoiceFunny:
     assets = "assets"
     executable = "./ffmpeg.exe"
