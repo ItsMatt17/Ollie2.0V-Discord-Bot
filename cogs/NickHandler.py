@@ -1,10 +1,9 @@
 import random
-import logging
 import typing
 
 import discord
-from discord.ext import commands
 from discord import app_commands
+from discord.ext import commands
 
 from config import MY_ID
 
@@ -24,25 +23,23 @@ class NickHandler(commands.Cog):
         await user.edit(nick="DAVID GOGGINS")
         dm = await user.create_dm()
         await dm.send(
-            content=f"You are david goggins, and nothing but him, embrace it!\n{random.choice(DAVID_GOGGINS)}"
-        )
-
+            content=f"You are david goggins, and nothing but him, embrace it!\n{random.choice(DAVID_GOGGINS)}")
 
     @commands.Cog.listener()
     async def on_member_update(self, before: discord.Member, after: discord.Member):
-        if not before.nick or before.nick.lower() != "david goggins": #If no user nickname or nickname was never 'David Goggins' :return:
+        if not before.nick or before.nick.lower() != "david goggins":  # If no user nickname or nickname was never 'David Goggins' :return:
             return
 
-        if after.nick and after.nick.lower() == "david goggins": # If the user has a nickname and it equals 'David Goggins' :return:
-            return
-        
-        async for logs in self.bot.get_guild(982514587742142545).audit_logs(limit=1, action=discord.AuditLogAction.member_update):
-            nick : str = logs.reason
-        
-        if nick and nick == "NO LONGER DAVID GOGGINS":
+        if after.nick and after.nick.lower() == "david goggins":  # If the user has a nickname and it equals 'David Goggins' :return:
             return
 
-        logging.warning("david goggins detected") 
+        async for logs in self.bot.get_guild(982514587742142545).audit_logs(limit=1,
+                                                                            action=discord.AuditLogAction.member_update):
+            nick_change_reason: str = logs.reason
+
+        if nick_change_reason and nick_change_reason == "NO LONGER DAVID GOGGINS":
+            return
+
         await self.user_dm(after)
 
     @app_commands.command(name="nick", description="Does a funny little hahaha")

@@ -1,10 +1,7 @@
-import datetime
-import random
-
 import discord
-from discord.ext import commands
 
 
+# TODO Refactor all back into desired class
 def no_vc() -> discord.Embed:
     embed = (discord.Embed(
         color=discord.Color.green(),

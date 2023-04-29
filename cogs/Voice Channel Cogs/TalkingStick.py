@@ -13,21 +13,20 @@ class TalkingStick(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.command(name="talking_stick", description="Make a channel a talking stick")
     async def talking_stick(self, interaction: discord.Interaction):
-        if not interaction.user.voice:
-            await interaction.response.send_message("You're not in a voice channel!")
-            return
-
         if interaction.user.id != MY_ID:
             await interaction.response.send_message("You don't have perms loser")
             return
 
-        channel = interaction.user.voice
-        for user in channel.channel.members:  # All users in voice channel
-            if user.id == interaction.user.id:
-                continue
-            print(f'[TALKING STICK] Muted {user}')
+        if not interaction.user.voice:
+            await interaction.response.send_message("You're not in a voice channel!")
+            return
 
-            await user.edit(
+        channel_members = interaction.user.voice.channel.members
+        for members in channel_members:  # All users in voice channel
+            if members.id == interaction.user.id:
+                continue
+
+            await members.edit(
                 mute=True)  # I think server mutes for every channel. Could be problem when someone leaves without me unmuting them.
 
         await interaction.response.send_message(
@@ -36,20 +35,21 @@ class TalkingStick(commands.Cog):
     @app_commands.checks.cooldown(1, 10)
     @app_commands.command(name='untalking_stick', description="Untalking stick a channel")
     async def untalking_stick(self, interaction: discord.Interaction):
-        if not interaction.user.voice:
-            await interaction.response.send_message("You're not in a voice channel!")
-            return
-
         if interaction.user.id != MY_ID:
             await interaction.response.send_message("You don't have perms loser")
             return
 
-        channel = interaction.user.voice
-        for user in channel.channel.members:
-            if user.id == interaction.user.id:
+        if not interaction.user.voice:
+            await interaction.response.send_message("You're not in a voice channel!")
+            return
+
+        channel_members = interaction.user.voice.channel.members
+        for channel_members in channel_members:
+            if channel_members.id == interaction.user.id:
                 continue
-            print(f'[TALKING STICK] Unmuted {user}')
-            await user.edit(mute=False)
+
+            await channel_members.edit(mute=False)
+
         await interaction.response.send_message("Untalking sticked")
 
     @talking_stick.error

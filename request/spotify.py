@@ -58,7 +58,7 @@ async def get_popularity(token, spotify_id) -> int:
     return json_info["popularity"]
 
 
-async def popularity_rating(spotify_id) -> Union[int, None]:
+async def get_popularity_rating(spotify_id) -> Union[int, None]:
     """Calls request functions to get popularity of a song
     :param: `str` of spotify track id
     :return: `int` of popularity

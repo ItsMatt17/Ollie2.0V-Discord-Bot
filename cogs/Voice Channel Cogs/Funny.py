@@ -8,21 +8,26 @@ from discord.ext import commands
 
 from config import VoiceFunny
 
+OPTIONS = []
+test = [discord.SelectOption(label=asset[:-4], description="An audio of a weirdo") for asset in
+        os.listdir(VoiceFunny.assets)]
+amount_of_clips = []
+
 
 class VoiceSelect(ui.Select):
     def __init__(self):
         self.SOURCE = None
-        options_1 = []
 
-        for asset in enumerate(os.listdir(VoiceFunny.assets)):
-            options_1.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
-        if len(options) >= 25:
-            print(f"[WARNING] Assets are reaching limit, there are {len(options)} in ./assets")
-        super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=options)
+        for asset in os.listdir(VoiceFunny.assets):
+            # amount_of_clips.append(asset.split())
+            OPTIONS.append(discord.SelectOption(label=asset[:-4], description="An audio of a weirdo"))
+        if len(OPTIONS) >= 25:
+            print(f"[WARNING] Assets are reaching limit, there are {len(OPTIONS)} in ./assets")
+        super().__init__(placeholder='Choose an audio clip to play', min_values=1, max_values=1, options=OPTIONS)
 
-
-    async def callback(self, interaction : discord.Interaction):
-        sound = self.values[0]
+    async def callback(self, interaction: discord.Interaction):
+        VALUE_SELECTED = 0
+        sound = self.values[VALUE_SELECTED]
         for asset in os.listdir(VoiceFunny.assets):
             if asset[:-4] == sound:
                 print(f'[SOURCE] Picked a source {asset}')
@@ -35,15 +40,12 @@ class VoiceSelect(ui.Select):
         audio = discord.FFmpegPCMAudio(executable=VoiceFunny.executable, source=self.SOURCE)
         channel.play(audio)
 
-        await interaction.response.send_message(content=":)", ephemeral=True)
-
         while channel.is_playing():
             await asyncio.sleep(2)
 
         channel.pause()
 
         await channel.disconnect()
-        await interaction.followup.send(content="Bye!", ephemeral=True)
 
 
 class VoiceView(ui.View):
@@ -57,12 +59,11 @@ class Funny(commands.Cog):
         self.bot: commands.Bot = bot
         self.SOURCE = ''
 
-    @staticmethod
-    def _embed_builder() -> discord.Embed:
+    def _embed_builder(self) -> discord.Embed:
         # for asset in os.listdir(VoiceFunny.assets):
 
         embed = discord.Embed(title="Funny Voice Clips",
-                              description=f"With over {len(VoiceSelect.options_1)} different clips, and Rey's flirting clips!",
+                              description=f"With over {len(OPTIONS)} different clips, and Rey's flirting clips!",
                               color=discord.Color.red())
         return embed
 
@@ -82,7 +83,6 @@ class Funny(commands.Cog):
         view = VoiceView()
         await interaction.response.send_message(embed=self._embed_builder(), view=view, ephemeral=True)
         await view.wait()
-
 
     @voice.error
     async def voice_error(self, interaction : discord.Interaction, error):
